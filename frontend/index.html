@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesture Control Suite 🎮</title>
+    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1><i class="fas fa-hand-paper"></i> Gesture Control Suite</h1>
+            <p class="subtitle">Control your computer with hand gestures</p>
+        </header>
+
+        <!-- Панель выбора приложений -->
+        <div class="app-selector">
+            <div class="app-card" data-app="coordinates">
+                <div class="app-icon">
+                    <i class="fas fa-crosshairs"></i>
+                </div>
+                <h3>Coordinates</h3>
+                <p>Track and visualize hand landmarks</p>
+                <button class="app-btn" data-app="coordinates">Launch</button>
+            </div>
+
+            <div class="app-card" data-app="cursor">
+                <div class="app-icon">
+                    <i class="fas fa-mouse-pointer"></i>
+                </div>
+                <h3>Cursor Control</h3>
+                <p>Control mouse with your index finger</p>
+                <button class="app-btn" data-app="cursor">Launch</button>
+            </div>
+
+            <div class="app-card" data-app="snake" disabled>
+                <div class="app-icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <h3>Snake Game</h3>
+                <p>Play snake with gestures (Coming Soon)</p>
+                <button class="app-btn" disabled>Coming Soon</button>
+            </div>
+        </div>
+
+        <!-- Основной рабочий экран -->
+        <div class="workspace hidden">
+            <div class="workspace-header">
+                <h2 id="current-app">Application</h2>
+                <button id="back-btn" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Menu
+                </button>
+            </div>
+
+            <div class="main-content">
+                <!-- Видео поток -->
+                <div class="video-container">
+                    <div class="video-wrapper">
+                        <img id="video-feed" src="" alt="Camera Feed">
+                        <div class="video-overlay">
+                            <div class="fps-counter">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span id="fps">0</span> FPS
+                            </div>
+                            <div class="hand-count">
+                                <i class="fas fa-hand-paper"></i>
+                                <span id="hand-count">0</span> hands
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3><i class="fas fa-video"></i> Camera Feed</h3>
+                        <p>Make sure your hand is visible in frame</p>
+                    </div>
+                </div>
+
+                <!-- Панель данных -->
+                <div class="data-panel">
+                    <div class="data-container" id="coordinates-panel">
+                        <h3><i class="fas fa-map-marker-alt"></i> Coordinates</h3>
+                        <div class="coordinates-display">
+                            <div class="coord-item">
+                                <span class="coord-label">Index Finger:</span>
+                                <span class="coord-value" id="index-coords">X: 0, Y: 0</span>
+                            </div>
+                            <div class="coord-item">
+                                <span class="coord-label">Thumb:</span>
+                                <span class="coord-value" id="thumb-coords">X: 0, Y: 0</span>
+                            </div>
+                            <div class="coord-item">
+                                <span class="coord-label">Distance:</span>
+                                <span class="coord-value" id="finger-distance">0.00</span>
+                            </div>
+                        </div>
+                        <canvas id="hand-canvas" width="400" height="300"></canvas>
+                    </div>
+
+                    <div class="data-container" id="cursor-panel">
+                        <h3><i class="fas fa-mouse"></i> Cursor Control</h3>
+                        <div class="cursor-stats">
+                            <div class="stat">
+                                <i class="fas fa-arrows-alt"></i>
+                                <div>
+                                    <div class="stat-label">Cursor Position</div>
+                                    <div class="stat-value" id="cursor-pos">0, 0</div>
+                                </div>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-hand-rock"></i>
+                                <div>
+                                    <div class="stat-label">Current Gesture</div>
+                                    <div class="stat-value" id="current-gesture">No gesture</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gesture-legend">
+                            <h4>Gesture Controls:</h4>
+                            <ul>
+                                <li><span class="gesture-key">👆</span> Index finger - Move cursor</li>
+                                <li><span class="gesture-key">👍👆</span> Pinch - Click</li>
+                                <li><span class="gesture-key">✊</span> Fist - Drag</li>
+                                <li><span class="gesture-key">✌️</span> Victory - Double click</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статус бар -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <i class="fas fa-plug"></i>
+                <span id="connection-status">Disconnected</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-microchip"></i>
+                <span>MediaPipe v0.10.10</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-code"></i>
+                <span>Python + FastAPI + WebSockets</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="static/app.js"></script>
+</body>
+</html>
