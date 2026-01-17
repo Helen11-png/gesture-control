@@ -3,11 +3,13 @@ import mediapipe as mp
 import numpy as np
 import pyautogui
 import math
+import time
+import json
 from .base_app import BaseGestureApp
 
 
 class CursorMonitoringApp(BaseGestureApp):
-    """Приложение для управления курсором мыши жестами"""
+    """Улучшенное приложение для управления курсором с настройками"""
 
     def __init__(self, hands, mp_hands, mp_drawing):
         super().__init__(hands, mp_hands, mp_drawing)
@@ -19,36 +21,67 @@ class CursorMonitoringApp(BaseGestureApp):
         self.screen_width, self.screen_height = pyautogui.size()
         print(f"Размер экрана: {self.screen_width}x{self.screen_height}")
 
-        # Настройки
-        self.smoothing = 3  # Коэффициент сглаживания движений
-        self.prev_x, self.prev_y = 0, 0
+        # Загружаем настройки
+        self.settings = self.load_default_settings()
+        self.load_settings_from_file()
 
-        # Состояния для перетаскивания
+        # Состояния
+        self.prev_x, self.prev_y = 0, 0
         self.is_dragging = False
+        self.drag_start_time = 0
+        self.drag_start_pos = (0, 0)
+        self.calibration_points = []  # Для калибровки
+        self.calibration_mode = False
 
         print("Управление курсором активно!")
-        print("Инструкции:")
-        print("1. Указательный палец - перемещение курсора")
-        print("2. Большой и указательный палец вместе - клик")
-        print("3. Мизинец и безымянный палец вместе - двойной клик")
-        print("4. Показать кулак - перетаскивание")
-        print("5. Нажмите 'q' в окне камеры для выхода")
+        print(f"Настройки: {self.settings}")
 
-    def setup(self):
-        """Настройка приложения"""
-        if not super().setup():
-            return False
+    def load_default_settings(self):
+        """Настройки по умолчанию"""
+        return {
+            'click_threshold': 0.045,  # Чувствительность клика
+            'double_click_threshold': 0.035,  # Чувствительность двойного клика
+            'fist_threshold': 0.12,  # Чувствительность кулака
+            'cursor_smoothing': 0.25,  # 0-1, чем больше - плавнее
+            'cursor_speed': 1.0,  # Скорость курсора
+            'deadzone': 0.15,  # Мёртвая зона по краям
+            'drag_delay': 0.3,  # Задержка отпускания перетаскивания
+            'enable_double_click': True,
+            'enable_drag': True,
+            'enable_click': True
+        }
 
-        # Получаем размер кадра камеры
-        self.frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        print(f"Размер кадра камеры: {self.frame_width}x{self.frame_height}")
+    def load_settings_from_file(self):
+        """Загружаем настройки из файла"""
+        try:
+            with open('cursor_settings.json', 'r') as f:
+                saved = json.load(f)
+                self.settings.update(saved)
+                print("Настройки загружены из файла")
+        except FileNotFoundError:
+            print("Используются настройки по умолчанию")
 
-        return True
+    def save_settings_to_file(self):
+        """Сохраняем настройки в файл"""
+        with open('cursor_settings.json', 'w') as f:
+            json.dump(self.settings, f, indent=4)
+        print("Настройки сохранены")
+
+    def exponential_smoothing(self, current, previous, alpha=None):
+        """Экспоненциальное сглаживание"""
+        if alpha is None:
+            alpha = self.settings['cursor_smoothing']
+        return alpha * current + (1 - alpha) * previous
 
     def _distance(self, p1, p2):
         """Вычисление расстояния между двумя точками"""
         return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
+
+    def calibrate_screen(self):
+        """Калибровка экрана (показываем 4 угла пальцем)"""
+        self.calibration_mode = True
+        self.calibration_points = []
+        print("Режим калибровки: покажите 4 угла экрана пальцем")
 
     def process_frame(self, frame, hand_landmarks):
         """Обработка одного кадра с жестами"""
@@ -57,44 +90,50 @@ class CursorMonitoringApp(BaseGestureApp):
         # Получаем координаты ключевых точек
         landmarks = hand_landmarks.landmark
 
-        # Координаты кончиков пальцев
-        thumb_tip = landmarks[4]  # Большой палец
-        index_tip = landmarks[8]  # Указательный палец
-        middle_tip = landmarks[12]  # Средний палец
-        ring_tip = landmarks[16]  # Безымянный палец
-        pinky_tip = landmarks[20]  # Мизинец
-        wrist = landmarks[0]  # Запястье
+        # Координаты пальцев
+        thumb_tip = landmarks[4]
+        index_tip = landmarks[8]
+        middle_tip = landmarks[12]
+        ring_tip = landmarks[16]
+        pinky_tip = landmarks[20]
+        wrist = landmarks[0]
 
-        # Преобразуем в пиксели для отрисовки
+        # Преобразуем в пиксели
         index_x = int(index_tip.x * width)
         index_y = int(index_tip.y * height)
 
-        # 1. УПРАВЛЕНИЕ КУРСОРОМ
-        # Преобразуем координаты указательного пальца в координаты экрана
-        # Используем центральную область кадра (игнорируем края)
-        cursor_x = np.interp(index_tip.x, [0.1, 0.9], [0, self.screen_width])
-        cursor_y = np.interp(index_tip.y, [0.1, 0.9], [0, self.screen_height])
+        # 1. УПРАВЛЕНИЕ КУРСОРОМ (улучшенное)
+        # Учитываем мёртвую зону
+        deadzone = self.settings['deadzone']
+        x_normalized = max(deadzone, min(1 - deadzone, index_tip.x))
+        y_normalized = max(deadzone, min(1 - deadzone, index_tip.y))
 
-        # Ограничиваем координаты экрана
+        # Преобразуем с учётом мёртвой зоны
+        effective_range = 1 - 2 * deadzone
+        cursor_x = np.interp(x_normalized,
+                             [deadzone, 1 - deadzone],
+                             [0, self.screen_width])
+        cursor_y = np.interp(y_normalized,
+                             [deadzone, 1 - deadzone],
+                             [0, self.screen_height])
+
+        # Ограничиваем
         cursor_x = max(0, min(self.screen_width - 1, cursor_x))
         cursor_y = max(0, min(self.screen_height - 1, cursor_y))
 
-        # Сглаживание движений
-        smooth_x = self.prev_x + (cursor_x - self.prev_x) / self.smoothing
-        smooth_y = self.prev_y + (cursor_y - self.prev_y) / self.smoothing
+        # Сглаживание
+        smooth_x = self.exponential_smoothing(cursor_x, self.prev_x)
+        smooth_y = self.exponential_smoothing(cursor_y, self.prev_y)
 
-        # Перемещаем курсор
-        pyautogui.moveTo(smooth_x, smooth_y, duration=0.1)
+        # Двигаем курсор
+        pyautogui.moveTo(smooth_x, smooth_y, duration=0.05)
 
         self.prev_x, self.prev_y = smooth_x, smooth_y
 
         # 2. ОПРЕДЕЛЯЕМ ЖЕСТЫ
-
-        # Расстояния между пальцами
         thumb_index_dist = self._distance(thumb_tip, index_tip)
         pinky_ring_dist = self._distance(pinky_tip, ring_tip)
 
-        # Расстояния от пальцев до запястья (для определения кулака)
         fingers_to_wrist = [
             self._distance(index_tip, wrist),
             self._distance(middle_tip, wrist),
@@ -102,70 +141,73 @@ class CursorMonitoringApp(BaseGestureApp):
             self._distance(pinky_tip, wrist)
         ]
 
-        # Жест клика (большой и указательный пальцы)
-        if thumb_index_dist < 0.05:  # Пороговое значение
+        # Жест клика
+        if (self.settings['enable_click'] and
+                thumb_index_dist < self.settings['click_threshold']):
             pyautogui.click()
             cv2.putText(frame, 'CLICK!', (50, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
 
-        # Жест двойного клика (мизинец и безымянный палец)
-        elif pinky_ring_dist < 0.03:
+        # Жест двойного клика
+        elif (self.settings['enable_double_click'] and
+              pinky_ring_dist < self.settings['double_click_threshold']):
             pyautogui.doubleClick()
             cv2.putText(frame, 'DOUBLE CLICK!', (50, 150),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 3)
 
         # Жест перетаскивания (кулак)
-        elif all(dist < 0.1 for dist in fingers_to_wrist):
+        elif (self.settings['enable_drag'] and
+              all(dist < self.settings['fist_threshold']
+                  for dist in fingers_to_wrist)):
+
             if not self.is_dragging:
                 pyautogui.mouseDown()
                 self.is_dragging = True
-            cv2.putText(frame, 'DRAGGING...', (50, 200),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-        else:
-            if self.is_dragging:
+                self.drag_start_time = time.time()
+                self.drag_start_pos = (cursor_x, cursor_y)
+                cv2.putText(frame, 'DRAG START', (50, 200),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+            else:
+                # Плавное перетаскивание
+                pyautogui.dragTo(cursor_x, cursor_y, duration=0.05)
+                cv2.putText(frame, 'DRAGGING...', (50, 200),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+
+        elif self.is_dragging:
+            # Заканчиваем перетаскивание с задержкой
+            if time.time() - self.drag_start_time > self.settings['drag_delay']:
                 pyautogui.mouseUp()
                 self.is_dragging = False
+                cv2.putText(frame, 'DRAG END', (50, 200),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 3)
 
-        # Рисуем визуализацию
-
+        # 3. ВИЗУАЛИЗАЦИЯ
         # Рисуем точку на указательном пальце
         cv2.circle(frame, (index_x, index_y), 15, (0, 0, 255), -1)
 
-        # Отображаем координаты курсора
-        cv2.putText(frame, f'Cursor: {int(cursor_x)},{int(cursor_y)}',
-                    (index_x + 20, index_y - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+        # Отображаем координаты и настройки
+        info_text = [
+            f"Cursor: {int(smooth_x)},{int(smooth_y)}",
+            f"Click: {thumb_index_dist:.3f}/{self.settings['click_threshold']:.3f}",
+            f"Drag: {self.is_dragging}",
+            f"Smooth: {self.settings['cursor_smoothing']}"
+        ]
 
-        # Рисуем все ключевые точки (опционально)
+        for i, text in enumerate(info_text):
+            cv2.putText(frame, text, (10, 30 + i * 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+        # Рисуем landmarks
         self.mp_drawing.draw_landmarks(
-            frame,
-            hand_landmarks,
-            self.mp_hands.HAND_CONNECTIONS,
+            frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS,
             self.mp_drawing_styles.get_default_hand_landmarks_style(),
             self.mp_drawing_styles.get_default_hand_connections_style())
 
-        # Отображаем инструкции
-        self._draw_instructions(frame)
-
         return frame
-
-    def _draw_instructions(self, frame):
-        """Рисует инструкции на кадре"""
-        cv2.putText(frame, 'Gesture Mouse Control', (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv2.putText(frame, 'Index finger: Move cursor', (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(frame, 'Thumb+Index: Click', (10, 80),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(frame, 'Pinky+Ring: Double click', (10, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(frame, 'Fist: Drag & drop', (10, 120),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.putText(frame, 'Press Q to quit', (10, 150),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     def cleanup(self):
         """Очистка ресурсов"""
         if self.is_dragging:
             pyautogui.mouseUp()
+        self.save_settings_to_file()
         super().cleanup()
