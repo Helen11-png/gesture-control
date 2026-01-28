@@ -18,7 +18,6 @@ class BaseGestureApp(ABC):
         pass
 
     def setup(self):
-        """Настройка приложения (опционально)"""
         self.cap = cv2.VideoCapture(0)
         return True
 
