@@ -2,6 +2,7 @@
 import mediapipe as mp
 from backend.apps.coordinates import CoordinatesApp
 from backend.apps.cursor_monitoring import CursorMonitoringApp
+from backend.apps.snake import SnakeApp
 
 
 def main():
@@ -20,7 +21,8 @@ def main():
     # Список доступных приложений
     apps = {
         '1': ("Coordinates", CoordinatesApp),
-        '2': ("Cursor Control", CursorMonitoringApp)
+        '2': ("Cursor Control", CursorMonitoringApp),
+        '3': ("Snake Game", SnakeApp)
     }
 
     while True:

@@ -1,6 +1,4 @@
-# apps/base_app.py - Базовый класс для всех приложений
 from abc import ABC, abstractmethod
-# apps/base_app.py - убедитесь, что это есть
 import cv2
 
 class BaseGestureApp(ABC):
