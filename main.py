@@ -1,4 +1,3 @@
-# main.py
 import mediapipe as mp
 from backend.apps.coordinates import CoordinatesApp
 from backend.apps.cursor_monitoring import CursorMonitoringApp
@@ -6,7 +5,6 @@ from backend.apps.snake import SnakeApp
 
 
 def main():
-    # Инициализация MediaPipe
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles  # Добавляем стили

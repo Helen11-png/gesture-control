@@ -36,13 +36,13 @@
                 <button class="app-btn" data-app="cursor">Launch</button>
             </div>
 
-            <div class="app-card" data-app="snake" disabled>
+            <div class="app-card" data-app="snake">
                 <div class="app-icon">
-                    <i class="fas fa-gamepad"></i>
+                    <i class="fas fa-gamepad"></i> <!-- или 🐍 -->
                 </div>
                 <h3>Snake Game</h3>
-                <p>Play snake with gestures (Coming Soon)</p>
-                <button class="app-btn" disabled>Coming Soon</button>
+                <p>Play snake with hand gestures</p>
+                <button class="app-btn" data-app="snake">Launch</button>
             </div>
         </div>
 
@@ -99,6 +99,59 @@
                     </div>
 
                     <div class="data-container" id="cursor-panel">
+                        <div class="data-container" id="snake-panel" style="display: none;">
+                            <h3><i class="fas fa-gamepad"></i> Snake Game</h3>
+
+                            <div class="game-stats">
+                                <div class="stat">
+                                    <i class="fas fa-star"></i>
+                                    <div>
+                                        <div class="stat-label">Score</div>
+                                        <div class="stat-value" id="snake-score">0</div>
+                                    </div>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-ruler"></i>
+                                    <div>
+                                        <div class="stat-label">Length</div>
+                                        <div class="stat-value" id="snake-length">1</div>
+                                    </div>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    <div>
+                                        <div class="stat-label">Speed</div>
+                                        <div class="stat-value" id="snake-speed">7</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="game-canvas-container">
+                                <canvas id="snake-canvas" width="400" height="400"></canvas>
+                            </div>
+
+                            <!-- Управление -->
+                            <div class="game-controls">
+                                <button id="restart-snake" class="control-btn">
+                                    <i class="fas fa-redo"></i> Restart
+                                </button>
+                                <button id="pause-snake" class="control-btn">
+                                    <i class="fas fa-pause"></i> Pause
+                                </button>
+                            </div>
+
+                            <!-- Инструкции -->
+                            <div class="instructions">
+                                <h4><i class="fas fa-info-circle"></i> How to Play:</h4>
+                                <ul>
+                                    <li><strong>Move hand UP</strong> = Snake goes UP</li>
+                                    <li><strong>Move hand DOWN</strong> = Snake goes DOWN</li>
+                                    <li><strong>Move hand LEFT</strong> = Snake goes LEFT</li>
+                                    <li><strong>Move hand RIGHT</strong> = Snake goes RIGHT</li>
+                                    <li><strong>Pinch gesture</strong> = Pause game</li>
+                                </ul>
+                                <p class="tip"><i class="fas fa-lightbulb"></i> Tip: Keep your hand steady for precise control!</p>
+                            </div>
+                        </div>
                         <h3><i class="fas fa-mouse"></i> Cursor Control</h3>
                         <div class="cursor-stats">
                             <div class="stat">
@@ -148,5 +201,9 @@
     </div>
 
     <script src="static/app.js"></script>
+    <div id="debug-info" style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 1000; display: none;">
+        <h4>Debug Info</h4>
+        <div id="debug-state">No state</div>
+    </div>
 </body>
 </html>

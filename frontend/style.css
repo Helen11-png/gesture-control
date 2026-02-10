@@ -382,3 +382,103 @@ body {
         align-items: flex-start;
     }
 }
+/* Стили для игры змейки */
+.game-stats {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.game-stats .stat {
+    text-align: center;
+}
+
+.game-stats .stat i {
+    font-size: 24px;
+    color: #00dbde;
+    margin-bottom: 5px;
+}
+
+.game-canvas-container {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+}
+
+#snake-canvas {
+    border: 2px solid #00dbde;
+    border-radius: 5px;
+    background: #0f3460;
+}
+
+.game-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.control-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.instructions {
+    background: rgba(0, 219, 222, 0.1);
+    border-left: 4px solid #00dbde;
+    padding: 15px;
+    border-radius: 0 10px 10px 0;
+    margin-top: 20px;
+}
+
+.instructions h4 {
+    color: #00dbde;
+    margin-bottom: 10px;
+}
+
+.instructions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.instructions li {
+    margin: 8px 0;
+    padding-left: 20px;
+    position: relative;
+}
+
+.instructions li:before {
+    content: "•";
+    color: #00dbde;
+    position: absolute;
+    left: 0;
+}
+
+.tip {
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 15px;
+    font-style: italic;
+}
+
+.tip i {
+    color: #ffc107;
+}
